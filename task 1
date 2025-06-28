@@ -1,0 +1,106 @@
+#include <reg51.h>
+#define LCD P2
+
+sbit rs = P3^0;
+sbit rw = P3^1;
+sbit en = P3^2;
+
+sbit btnA = P1^0;
+sbit btnB = P1^1;
+sbit btnC = P1^2;
+
+unsigned int voteA = 0;
+unsigned int voteB = 0;
+unsigned int voteC = 0;
+
+void delay(unsigned int t) {
+    int i, j;
+    for (i = 0; i < t; i++)
+        for (j = 0; j < 1275; j++);
+}
+
+void lcd_cmd(unsigned char cmd) {
+    LCD = cmd;
+    rs = 0;
+    rw = 0;
+    en = 1;
+    delay(2);
+    en = 0;
+}
+
+void lcd_data(unsigned char dat) {
+    LCD = dat;
+    rs = 1;
+    rw = 0;
+    en = 1;
+    delay(2);
+    en = 0;
+}
+
+void lcd_str(unsigned char *str) {
+    while (*str) {
+        lcd_data(*str++);
+    }
+}
+
+void lcd_init() {
+    lcd_cmd(0x38);
+    lcd_cmd(0x0E);
+    lcd_cmd(0x01);
+    lcd_cmd(0x80);
+}
+
+void lcd_number(unsigned int num) {
+    unsigned char str[5];
+    int i = 0;
+    if (num == 0) {
+        lcd_data('0');
+        return;
+    }
+    while (num > 0) {
+        str[i++] = (num % 10) + '0';
+        num = num / 10;
+    }
+    while (i > 0) {
+        lcd_data(str[--i]);
+    }
+}
+
+void show_votes() {
+    lcd_cmd(0x01);
+    lcd_cmd(0x80);
+    lcd_str("A:");
+    lcd_number(voteA);
+    lcd_str(" B:");
+    lcd_number(voteB);
+    lcd_str(" C:");
+    lcd_number(voteC);
+}
+
+void main() {
+    lcd_init();
+    lcd_str("Voting Machine");
+    delay(2000);
+    lcd_cmd(0x01);
+
+    while (1) {
+        if (btnA == 0) {
+            voteA++;
+            show_votes();
+            while (btnA == 0); // Wait for release
+            delay(100);
+        }
+        if (btnB == 0) {
+            voteB++;
+            show_votes();
+            while (btnB == 0);
+            delay(100);
+        }
+        if (btnC == 0) {
+            voteC++;
+            show_votes();
+            while (btnC == 0);
+            delay(100);
+        }
+    }
+}
